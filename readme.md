@@ -71,6 +71,7 @@ flowchart TD
     J --> L
     L -- "Fix Failed" --> K
     L -- "Fix Succeeded" --> End(["Alert Closed"])
+    ```
 
 📦 Repository Structure
 Plaintext
