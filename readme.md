@@ -12,34 +12,34 @@ The lifecycle of an incident remediation within AutoSRE operates as a bounded st
 ```mermaid
 flowchart TD
     %% Define Styles
-    classDef trigger fill:#f9d0c4,stroke:#333,stroke-width:2px;
-    classDef llm fill:#d4e6f1,stroke:#333,stroke-width:2px;
-    classDef tool fill:#d5f5e3,stroke:#333,stroke-width:2px;
-    classDef safety fill:#fcf3cf,stroke:#333,stroke-width:2px;
-    classDef terminal fill:#fad7a1,stroke:#333,stroke-width:2px;
+    classDef trigger fill:#f9d0c4,stroke:#333,stroke-width:2px,color:#000;
+    classDef llm fill:#d4e6f1,stroke:#333,stroke-width:2px,color:#000;
+    classDef tool fill:#d5f5e3,stroke:#333,stroke-width:2px,color:#000;
+    classDef safety fill:#fcf3cf,stroke:#333,stroke-width:2px,color:#000;
+    classDef terminal fill:#fad7a1,stroke:#333,stroke-width:2px,color:#000;
 
     subgraph Observability Layer
-        A[External Alert Trigger <br> e.g., High CPU / DB Locks]:::trigger
+        A["External Alert Trigger <br> e.g., High CPU / DB Locks"]:::trigger
     end
 
     subgraph LangGraph Agentic Loop
-        B[State Initializer <br> Parse JSON Payload]:::llm
-        C{LLM Reasoning Engine <br> Decide Next Action}:::llm
-        D[Context Aggregator <br> Update State Memory]:::llm
-        H[Remediation Planner <br> Draft Terraform/YAML Fix]:::llm
+        B["State Initializer <br> Parse JSON Payload"]:::llm
+        C{"LLM Reasoning Engine <br> Decide Next Action"}:::llm
+        D["Context Aggregator <br> Update State Memory"]:::llm
+        H["Remediation Planner <br> Draft Terraform/YAML Fix"]:::llm
     end
 
     subgraph Tool Executors
-        E[K8s Inspector Tool <br> kubectl get/describe]:::tool
-        F[DB Analyzer Tool <br> pg_stat_activity]:::tool
-        G[Runbook Retriever <br> Vector Search .md]:::tool
+        E["K8s Inspector Tool <br> kubectl get/describe"]:::tool
+        F["DB Analyzer Tool <br> pg_stat_activity"]:::tool
+        G["Runbook Retriever <br> Vector Search .md"]:::tool
     end
 
     subgraph Execution & Safety Boundary
-        I{Human-in-the-Loop <br> Terminal Approval (Y/N)}:::safety
-        J[Execute Infrastructure Mutation]:::safety
-        K[Escalate to Human SRE <br> Send Slack/PagerDuty]:::terminal
-        L[Verify Health & Log Postmortem]:::terminal
+        I{"Human-in-the-Loop <br> Terminal Approval (Y/N)"}:::safety
+        J["Execute Infrastructure Mutation"]:::safety
+        K["Escalate to Human SRE <br> Send Slack/PagerDuty"]:::terminal
+        L["Verify Health & Log Postmortem"]:::terminal
     end
 
     %% Edge Connections
@@ -47,9 +47,9 @@ flowchart TD
     B --> C
     
     %% LLM decides to use tools
-    C -- Needs Pod Logs --> E
-    C -- Needs SQL Metrics --> F
-    C -- Needs SOP Docs --> G
+    C -- "Needs Pod Logs" --> E
+    C -- "Needs SQL Metrics" --> F
+    C -- "Needs SOP Docs" --> G
     
     %% Tools return data to memory
     E --> D
@@ -60,17 +60,17 @@ flowchart TD
     D --> C
     
     %% Enough context gathered
-    C -- Context Sufficient --> H
+    C -- "Context Sufficient" --> H
     H --> I
     
     %% Safety routing
-    I -- Approved (Y) --> J
-    I -- Rejected / Timeout --> K
+    I -- "Approved (Y)" --> J
+    I -- "Rejected / Timeout" --> K
     
     %% Post action
     J --> L
-    L -- Fix Failed --> K
-    L -- Fix Succeeded --> End([Alert Closed])
+    L -- "Fix Failed" --> K
+    L -- "Fix Succeeded" --> End(["Alert Closed"])
 
 📦 Repository Structure
 Plaintext
