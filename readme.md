@@ -70,7 +70,7 @@ flowchart TD
     %% Post action
     J --> L
     L -- "Fix Failed" --> K
-    L -- "Fix Succeeded" --> End(["Alert Closed"])
+    L -- "Fix Succeeded" --> EndNode("Alert Closed")
     ```
 
 📦 Repository Structure
