@@ -71,10 +71,11 @@ flowchart TD
     J --> L
     L -- "Fix Failed" --> K
     L -- "Fix Succeeded" --> EndNode("Alert Closed")
-    ```
+```
 
-📦 Repository Structure
-Plaintext
+###📦 Repository Structure
+
+```text
 autosre-agent/
 ├── core/                         # Core Agent Orchestration
 │   ├── __init__.py
