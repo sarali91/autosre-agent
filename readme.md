@@ -5,14 +5,15 @@ Deterministic Routing: Prevents LLM hallucination in production by mapping discr
 
 Human-in-the-Loop (HITL) Safety Gates: Enforces explicit breakpoint interruptions prior to executing destructive or mutation-heavy infrastructure commands (e.g., scaling stateful sets or running schema migrations).
 
-### 📊 Feature Design & Core Logic Flow
+### 📊 Enterprise Architecture & Core Logic Flow
 
-The lifecycle of an incident remediation within AutoSRE operates as a bounded state machine rather than an unrestricted linear pipeline. The following system architecture details how alert telemetry transforms into audited state changes:
+To handle production-grade concurrency and LLM unpredictability, AutoSRE employs an event-driven architecture with strict message buffering (Kafka/RabbitMQ) and deterministic fallback degradation.
 
 ```mermaid
 flowchart TD
     %% Define Styles
     classDef trigger fill:#f9d0c4,stroke:#333,stroke-width:2px,color:#000;
+    classDef broker fill:#d2b4de,stroke:#333,stroke-width:2px,color:#000;
     classDef llm fill:#d4e6f1,stroke:#333,stroke-width:2px,color:#000;
     classDef tool fill:#d5f5e3,stroke:#333,stroke-width:2px,color:#000;
     classDef safety fill:#fcf3cf,stroke:#333,stroke-width:2px,color:#000;
@@ -22,9 +23,17 @@ flowchart TD
         A["External Alert Trigger <br> e.g., High CPU / DB Locks"]:::trigger
     end
 
-    subgraph LangGraph Agentic Loop
-        B["State Initializer <br> Parse JSON Payload"]:::llm
+    subgraph Message Broker (Peak Shaving)
+        Q[("Kafka / RabbitMQ <br> Event Stream Buffer")]:::broker
+    end
+
+    subgraph LangGraph Agentic Loop (Thread Isolated)
+        B["State Initializer <br> Parse JSON & Extract Trace ID"]:::llm
         C{"LLM Reasoning Engine <br> Decide Next Action"}:::llm
+        
+        %% The Fallback Node
+        FB["Deterministic Fallback <br> Trigger Static Runbook"]:::terminal
+        
         D["Context Aggregator <br> Update State Memory"]:::llm
         H["Remediation Planner <br> Draft Terraform/YAML Fix"]:::llm
     end
@@ -32,7 +41,6 @@ flowchart TD
     subgraph Tool Executors
         E["K8s Inspector Tool <br> kubectl get/describe"]:::tool
         F["DB Analyzer Tool <br> pg_stat_activity"]:::tool
-        G["Runbook Retriever <br> Vector Search .md"]:::tool
     end
 
     subgraph Execution & Safety Boundary
@@ -43,27 +51,26 @@ flowchart TD
     end
 
     %% Edge Connections
-    A --> B
+    A --> Q
+    Q --> B
     B --> C
     
-    %% LLM decides to use tools
+    %% LLM Routing & Fallback
     C -- "Needs Pod Logs" --> E
     C -- "Needs SQL Metrics" --> F
-    C -- "Needs SOP Docs" --> G
+    C -- "Context Sufficient" --> H
+    C -. "LLM Timeout / Parse Error (3x Retry)" .-> FB
     
-    %% Tools return data to memory
+    %% Fallback to Escalation
+    FB --> K
+
+    %% Tools return data
     E --> D
     F --> D
-    G --> D
-    
-    %% Loop back to reasoning
     D --> C
     
-    %% Enough context gathered
-    C -- "Context Sufficient" --> H
-    H --> I
-    
     %% Safety routing
+    H --> I
     I -- "Approved (Y)" --> J
     I -- "Rejected / Timeout" --> K
     
