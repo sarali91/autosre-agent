@@ -5,9 +5,9 @@ Deterministic Routing: Prevents LLM hallucination in production by mapping discr
 
 Human-in-the-Loop (HITL) Safety Gates: Enforces explicit breakpoint interruptions prior to executing destructive or mutation-heavy infrastructure commands (e.g., scaling stateful sets or running schema migrations).
 
-### 📊 Enterprise Architecture & Core Logic Flow
+### 📊 Feature Design & Core Logic Flow
 
-To handle production-grade concurrency and LLM unpredictability, AutoSRE employs an event-driven architecture with strict message buffering (Kafka/RabbitMQ) and deterministic fallback degradation.
+The lifecycle of an incident remediation within AutoSRE operates as a bounded state machine rather than an unrestricted linear pipeline. The following system architecture details how alert telemetry transforms into audited state changes:
 
 ```mermaid
 flowchart TD
@@ -23,15 +23,14 @@ flowchart TD
         A["External Alert Trigger <br> e.g., High CPU / DB Locks"]:::trigger
     end
 
-    subgraph Message Broker (Peak Shaving)
+    subgraph "Message Broker (Peak Shaving)"
         Q[("Kafka / RabbitMQ <br> Event Stream Buffer")]:::broker
     end
 
-    subgraph LangGraph Agentic Loop (Thread Isolated)
+    subgraph "LangGraph Agentic Loop (Thread Isolated)"
         B["State Initializer <br> Parse JSON & Extract Trace ID"]:::llm
         C{"LLM Reasoning Engine <br> Decide Next Action"}:::llm
         
-        %% The Fallback Node
         FB["Deterministic Fallback <br> Trigger Static Runbook"]:::terminal
         
         D["Context Aggregator <br> Update State Memory"]:::llm
